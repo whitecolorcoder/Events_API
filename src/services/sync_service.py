@@ -6,8 +6,19 @@ from src.database.models import Place, Event, SyncMetadata
 
 
 def parse_dt(value: str) -> datetime:
-    """Convert ISO datetime string from API to Python datetime"""
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def parse_seats_pattern(pattern: str) -> list[list[int]]:
+
+    result = []
+    blocks = pattern.split(",")  # ["A1-30", "B1-50", ...]
+    for block in blocks:
+        rng = block[1:]  # "1-30"
+        start, end = map(int, rng.split("-"))
+        row = [1] * (end - start + 1)
+        result.append(row)
+    return result
 
 
 class SyncService:
@@ -34,7 +45,6 @@ class SyncService:
         metadata = self.get_or_create_metadata()
 
         changed_at = metadata.last_changed_at.date().isoformat()
-
         events_data = self.client.get_all_events(changed_at)
 
         existing_places = {str(p.id): p for p in self.db.query(Place).all()}
@@ -48,13 +58,15 @@ class SyncService:
 
             # -------- PLACE --------
 
+            seats = parse_seats_pattern(place_data["seats_pattern"])
+
             if place_id in existing_places:
                 place = existing_places[place_id]
 
                 place.name = place_data["name"]
                 place.city = place_data["city"]
                 place.address = place_data["address"]
-                place.seats_pattern = place_data["seats_pattern"]
+                place.seats_pattern = seats
                 place.created_at = parse_dt(place_data["created_at"])
                 place.changed_at = parse_dt(place_data["changed_at"])
 
@@ -64,7 +76,7 @@ class SyncService:
                     name=place_data["name"],
                     city=place_data["city"],
                     address=place_data["address"],
-                    seats_pattern=place_data["seats_pattern"],
+                    seats_pattern=seats,
                     created_at=parse_dt(place_data["created_at"]),
                     changed_at=parse_dt(place_data["changed_at"])
                 )
@@ -106,14 +118,9 @@ class SyncService:
                 self.db.add(event)
                 existing_events[event_id] = event
 
-            # -------- MAX CHANGED_AT --------
-
             changed_at_item = parse_dt(item["changed_at"])
-
             if changed_at_item > max_changed_at:
                 max_changed_at = changed_at_item
-
-        # -------- METADATA UPDATE --------
 
         metadata.last_sync_time = datetime.utcnow()
         metadata.last_changed_at = max_changed_at

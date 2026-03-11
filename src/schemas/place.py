@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 
 class PlaceResponse(BaseModel):
@@ -8,5 +8,4 @@ class PlaceResponse(BaseModel):
     address: str
     seats_pattern: list[list[int]]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

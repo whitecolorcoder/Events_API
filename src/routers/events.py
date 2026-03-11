@@ -37,6 +37,7 @@ def list_events(
         "pages": pages
     }
 
+
 @router.get("/{event_id}", response_model=EventResponse)
 def get_event(event_id: str, db: SessionDep):
     event = (
@@ -51,6 +52,7 @@ def get_event(event_id: str, db: SessionDep):
 
     return EventResponse.from_orm(event)
 
+
 @router.get("/{event_id}/seats")
 def get_seats(event_id: str, db: SessionDep):
     event = db.query(Event).filter(Event.id == event_id).first()
@@ -64,15 +66,14 @@ def get_seats(event_id: str, db: SessionDep):
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
+    seats_pattern = place.seats_pattern
 
     seats = []
-    blocks = place.seats_pattern.split(",")  
-    for block in blocks:
-        row = block[0]         
-        rng = block[1:]        
-        start, end = map(int, rng.split("-"))
-        for num in range(start, end + 1):
-            seats.append(f"{row}{num}")
+    for row_index, row in enumerate(seats_pattern):
+        row_letter = chr(ord("A") + row_index)
+        for seat_index, seat_value in enumerate(row, start=1):
+            if seat_value == 1:
+                seats.append(f"{row_letter}{seat_index}")
 
     taken = db.query(Registration.seat).filter(
         Registration.event_id == event_id
@@ -82,7 +83,6 @@ def get_seats(event_id: str, db: SessionDep):
     free_seats = [s for s in seats if s not in taken_seats]
 
     return {"seats": free_seats}
-
 
 
 @router.post("/{event_id}/register")
