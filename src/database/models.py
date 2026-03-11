@@ -1,10 +1,8 @@
 from datetime import datetime
 from sqlalchemy import String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
-import uuid
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql import func
 
 from src.database.base import Base
 
@@ -12,8 +10,8 @@ from src.database.base import Base
 class Place(Base):
     __tablename__ = "place"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[str] = mapped_column(
+        String,
         primary_key=True
     )
 
@@ -22,6 +20,7 @@ class Place(Base):
     address: Mapped[str] = mapped_column(String(255), nullable=False)
 
     seats_pattern: Mapped[list[list[int]]] = mapped_column(JSONB, nullable=False)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False
@@ -40,14 +39,14 @@ class Place(Base):
 class Event(Base):
     __tablename__ = "event"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[str] = mapped_column(
+        String,
         primary_key=True
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    place_id: Mapped[uuid.UUID] = mapped_column(
+    place_id: Mapped[str] = mapped_column(
         ForeignKey("place.id"),
         nullable=False,
         index=True
@@ -90,19 +89,18 @@ class Event(Base):
     )
 
 
-
 class Registration(Base):
     __tablename__ = "registration"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    ticket_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    ticket_id: Mapped[str] = mapped_column(
+        String,
         nullable=False,
         index=True
     )
 
-    event_id: Mapped[uuid.UUID] = mapped_column(
+    event_id: Mapped[str] = mapped_column(
         ForeignKey("event.id"),
         nullable=False,
         index=True

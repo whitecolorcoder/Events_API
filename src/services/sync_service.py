@@ -10,11 +10,10 @@ def parse_dt(value: str) -> datetime:
 
 
 def parse_seats_pattern(pattern: str) -> list[list[int]]:
-
     result = []
-    blocks = pattern.split(",")  # ["A1-30", "B1-50", ...]
+    blocks = pattern.split(",")
     for block in blocks:
-        rng = block[1:]  # "1-30"
+        rng = block[1:]
         start, end = map(int, rng.split("-"))
         row = [1] * (end - start + 1)
         result.append(row)
@@ -47,29 +46,27 @@ class SyncService:
         changed_at = metadata.last_changed_at.date().isoformat()
         events_data = self.client.get_all_events(changed_at)
 
-        existing_places = {str(p.id): p for p in self.db.query(Place).all()}
-        existing_events = {str(e.id): e for e in self.db.query(Event).all()}
+        # ВАЖНО: ключи — строки, как в API
+        existing_places = {p.id: p for p in self.db.query(Place).all()}
+        existing_events = {e.id: e for e in self.db.query(Event).all()}
 
         max_changed_at = metadata.last_changed_at
 
         for item in events_data:
             place_data = item["place"]
-            place_id = str(place_data["id"])
-
-            # -------- PLACE --------
+            place_id = place_data["id"]  # строка UUID
 
             seats = parse_seats_pattern(place_data["seats_pattern"])
 
+            # -------- PLACE --------
             if place_id in existing_places:
                 place = existing_places[place_id]
-
                 place.name = place_data["name"]
                 place.city = place_data["city"]
                 place.address = place_data["address"]
                 place.seats_pattern = seats
                 place.created_at = parse_dt(place_data["created_at"])
                 place.changed_at = parse_dt(place_data["changed_at"])
-
             else:
                 place = Place(
                     id=place_id,
@@ -80,17 +77,14 @@ class SyncService:
                     created_at=parse_dt(place_data["created_at"]),
                     changed_at=parse_dt(place_data["changed_at"])
                 )
-
                 self.db.add(place)
                 existing_places[place_id] = place
 
             # -------- EVENT --------
-
-            event_id = str(item["id"])
+            event_id = item["id"]  # строка UUID
 
             if event_id in existing_events:
                 event = existing_events[event_id]
-
                 event.name = item["name"]
                 event.place_id = place_id
                 event.event_time = parse_dt(item["event_time"])
@@ -100,7 +94,6 @@ class SyncService:
                 event.created_at = parse_dt(item["created_at"])
                 event.changed_at = parse_dt(item["changed_at"])
                 event.status_changed_at = parse_dt(item["status_changed_at"])
-
             else:
                 event = Event(
                     id=event_id,
@@ -114,14 +107,15 @@ class SyncService:
                     changed_at=parse_dt(item["changed_at"]),
                     status_changed_at=parse_dt(item["status_changed_at"])
                 )
-
                 self.db.add(event)
                 existing_events[event_id] = event
 
+            # -------- MAX CHANGED_AT --------
             changed_at_item = parse_dt(item["changed_at"])
             if changed_at_item > max_changed_at:
                 max_changed_at = changed_at_item
 
+        # -------- METADATA UPDATE --------
         metadata.last_sync_time = datetime.utcnow()
         metadata.last_changed_at = max_changed_at
 
