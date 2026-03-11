@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     DB_PORT: int = Field(alias="POSTGRES_PORT")
     DB_NAME: str = Field(alias="POSTGRES_DATABASE_NAME")
 
-    EVENTS_API_KEY: str  
+    EVENTS_API_KEY: str
 
     @property
     def DATABASE_URL(self):
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".env",
-        populate_by_name=True  
+        populate_by_name=True
     )
 
 
