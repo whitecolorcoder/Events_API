@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     DB_PORT: int = Field(alias="POSTGRES_PORT")
     DB_NAME: str = Field(alias="POSTGRES_DATABASE_NAME")
 
-    EVENTS_API_KEY: str
-
+    EVENTS_API_KEY: str | None = None
+    
     @property
     def DATABASE_URL(self):
         return (
