@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 import uuid
+from sqlalchemy.dialects.postgresql import JSONB
 
 from src.database.base import Base
 
@@ -19,8 +20,8 @@ class Place(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     address: Mapped[str] = mapped_column(String(255), nullable=False)
-    seats_pattern: Mapped[str] = mapped_column(String, nullable=False)
 
+    seats_pattern: Mapped[list[list[int]]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False

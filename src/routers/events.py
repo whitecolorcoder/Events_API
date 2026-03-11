@@ -4,14 +4,14 @@ from sqlalchemy.orm import Session
 from src.routers.deps import SessionDep
 from src.database.models import Event, Place, Registration
 from src.services.events_provider_client import EventsProviderClient
-
+from sqlalchemy.orm import joinedload
+from src.schemas.event import EventResponse
 from fastapi import Query
+
 
 router = APIRouter(prefix="/events")
 
-
-
-@router.get("")
+@router.get("", response_model=dict)
 def list_events(
     db: SessionDep,
     page: int = Query(1, ge=1),
@@ -20,11 +20,9 @@ def list_events(
     total = db.query(Event).count()
     pages = (total + page_size - 1) // page_size
 
-    if page > pages and total != 0:
-        raise HTTPException(status_code=404, detail="Page not found")
-
     events = (
         db.query(Event)
+        .options(joinedload(Event.place))
         .order_by(Event.event_time)
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -32,32 +30,26 @@ def list_events(
     )
 
     return {
-        "items": events,
+        "items": [EventResponse.from_orm(e) for e in events],
         "total": total,
         "page": page,
         "page_size": page_size,
         "pages": pages
     }
 
-
-
-@router.get("/{event_id}")
+@router.get("/{event_id}", response_model=EventResponse)
 def get_event(event_id: str, db: SessionDep):
-    event = db.query(Event).filter(Event.id == event_id).first()
+    event = (
+        db.query(Event)
+        .options(joinedload(Event.place))
+        .filter(Event.id == event_id)
+        .first()
+    )
+
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    place = db.query(Place).filter(Place.id == event.place_id).first()
-    registrations_count = db.query(Registration).filter(
-        Registration.event_id == event_id
-    ).count()
-
-    return {
-        "event": event,
-        "place": place,
-        "registrations": registrations_count
-    }
-
+    return EventResponse.from_orm(event)
 
 @router.get("/{event_id}/seats")
 def get_seats(event_id: str, db: SessionDep):
