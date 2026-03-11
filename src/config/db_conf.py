@@ -1,18 +1,27 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 class Settings(BaseSettings):
-    DB_HOST: str
-    DB_PASS: str
-    DB_USER: str
-    DB_PORT: int
-    DB_NAME: str
-    EVENTS_API_KEY: str
+    DB_HOST: str = Field(alias="POSTGRES_HOST")
+    DB_PASS: str = Field(alias="POSTGRES_PASSWORD")
+    DB_USER: str = Field(alias="POSTGRES_USERNAME")
+    DB_PORT: int = Field(alias="POSTGRES_PORT")
+    DB_NAME: str = Field(alias="POSTGRES_DATABASE_NAME")
+
+    EVENTS_API_KEY: str  
 
     @property
     def DATABASE_URL(self):
-        return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return (
+            f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        populate_by_name=True  
+    )
+
 
 settings = Settings()
