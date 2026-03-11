@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     DB_USER: str
     DB_PORT: int
     DB_NAME: str
+    EVENTS_API_KEY: str
 
     @property
     def DATABASE_URL(self):

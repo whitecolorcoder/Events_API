@@ -1,59 +1,136 @@
 from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey
+from sqlalchemy import String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
+import uuid
+
 from src.database.base import Base
 
 
 class Place(Base):
-    __tablename__ = "places"
+    __tablename__ = "place"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255))
-    city: Mapped[str] = mapped_column(String(100))
-    address: Mapped[str] = mapped_column(String(255))
-    seats_pattern: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True
+    )
 
-    events: Mapped[list["Events"]] = relationship(back_populates="place")
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    city: Mapped[str] = mapped_column(String(100), nullable=False)
+    address: Mapped[str] = mapped_column(String(255), nullable=False)
+    seats_pattern: Mapped[str] = mapped_column(String, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+
+    events: Mapped[list["Event"]] = relationship(
+        back_populates="place",
+        cascade="all, delete-orphan"
+    )
 
 
-class Events(Base):
-    __tablename__ = "events"
+class Event(Base):
+    __tablename__ = "event"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255))
-    place_id: Mapped[int] = mapped_column(ForeignKey("places.id"))
-    event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    registration_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    status: Mapped[str] = mapped_column(String(50))
-    number_of_visitors: Mapped[int] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    status_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True
+    )
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    place_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("place.id"),
+        nullable=False,
+        index=True
+    )
+
+    event_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+    registration_deadline: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+
+    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    number_of_visitors: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0"
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+    status_changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
 
     place: Mapped["Place"] = relationship(back_populates="events")
-    tickets: Mapped[list["Tickets"]] = relationship(back_populates="event")
+
+    registrations: Mapped[list["Registration"]] = relationship(
+        back_populates="event",
+        cascade="all, delete-orphan"
+    )
 
 
-class Tickets(Base):
-    __tablename__ = "tickets"
+
+class Registration(Base):
+    __tablename__ = "registration"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
-    first_name: Mapped[str] = mapped_column(String(100))
-    last_name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(255))
-    seat: Mapped[str] = mapped_column(String(20))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
-    event: Mapped["Events"] = relationship(back_populates="tickets")
+    ticket_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=False,
+        index=True
+    )
+
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("event.id"),
+        nullable=False,
+        index=True
+    )
+
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    seat: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    event: Mapped["Event"] = relationship(back_populates="registrations")
 
 
 class SyncMetadata(Base):
     __tablename__ = "sync_metadata"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    last_sync_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    last_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    sync_status: Mapped[str] = mapped_column(String(50))
+
+    last_sync_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+    last_changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
