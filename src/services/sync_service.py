@@ -43,7 +43,6 @@ class SyncService:
         changed_at = metadata.last_changed_at.date().isoformat()
         events_data = self.client.get_all_events(changed_at)
 
-        # ВАЖНО: ключи — строки, как в API
         existing_places = {p.id: p for p in self.db.query(Place).all()}
         existing_events = {e.id: e for e in self.db.query(Event).all()}
 
@@ -51,11 +50,10 @@ class SyncService:
 
         for item in events_data:
             place_data = item["place"]
-            place_id = place_data["id"]  # строка UUID
+            place_id = place_data["id"]
 
             seats = parse_seats_pattern(place_data["seats_pattern"])
 
-            # -------- PLACE --------
             if place_id in existing_places:
                 place = existing_places[place_id]
                 place.name = place_data["name"]
@@ -77,8 +75,7 @@ class SyncService:
                 self.db.add(place)
                 existing_places[place_id] = place
 
-            # -------- EVENT --------
-            event_id = item["id"]  # строка UUID
+            event_id = item["id"]
 
             if event_id in existing_events:
                 event = existing_events[event_id]
@@ -107,12 +104,10 @@ class SyncService:
                 self.db.add(event)
                 existing_events[event_id] = event
 
-            # -------- MAX CHANGED_AT --------
             changed_at_item = parse_dt(item["changed_at"])
             if changed_at_item > max_changed_at:
                 max_changed_at = changed_at_item
 
-        # -------- METADATA UPDATE --------
         metadata.last_sync_time = datetime.utcnow()
         metadata.last_changed_at = max_changed_at
 

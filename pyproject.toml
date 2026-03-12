@@ -13,7 +13,9 @@ dependencies = [
     "pydantic",
     "pydantic-settings",
     "ruff>=0.15.5",
+    "apscheduler>=3.10.4",
 ]
+
 
 [dependency-groups]
 dev = [
