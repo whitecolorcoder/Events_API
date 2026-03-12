@@ -60,11 +60,15 @@ class Registration(Base):
     row: Mapped[int] = mapped_column(Integer, nullable=False)
     seat: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     event: Mapped["Event"] = relationship(back_populates="registrations")
+
 
 
 class SyncMetadata(Base):

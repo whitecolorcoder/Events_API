@@ -22,7 +22,23 @@ class PlaceResponse(BaseModel):
         from_attributes = True
 
 
-class EventResponse(BaseModel):
+class EventDetailResponse(BaseModel):
+    id: str
+    name: str
+    event_time: datetime
+    registration_deadline: datetime
+    status: str
+    number_of_visitors: int
+    created_at: datetime
+    changed_at: datetime
+    status_changed_at: datetime
+    place: PlaceResponse
+
+    class Config:
+        from_attributes = True
+
+
+class EventListItem(BaseModel):
     id: str
     name: str
     place_id: str
@@ -34,14 +50,15 @@ class EventResponse(BaseModel):
     changed_at: datetime
     status_changed_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 
 class EventsListResponse(BaseModel):
     count: int
     next: Optional[str]
     previous: Optional[str]
-    results: List[EventResponse]
+    results: List[EventListItem]
 
 
 class SeatsResponse(BaseModel):
@@ -51,9 +68,10 @@ class SeatsResponse(BaseModel):
 
 class TicketCreateRequest(BaseModel):
     event_id: str
-    row: int
-    seat: int
+    first_name: str
+    last_name: str
     email: str
+    seat: str
 
 
 class TicketCreateResponse(BaseModel):
@@ -77,16 +95,28 @@ def list_events(db: SessionDep):
         "count": len(events),
         "next": None,
         "previous": None,
-        "results": [EventResponse.from_orm(e) for e in events],
+        "results": [EventListItem.from_orm(e) for e in events],
     }
 
 
-@router.get("/events/{event_id}", response_model=EventResponse)
+@router.get("/events/{event_id}", response_model=EventDetailResponse)
 def get_event(event_id: str, db: SessionDep):
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Not Found")
-    return EventResponse.from_orm(event)
+
+    return EventDetailResponse(
+        id=event.id,
+        name=event.name,
+        event_time=event.event_time,
+        registration_deadline=event.registration_deadline,
+        status=event.status,
+        number_of_visitors=event.number_of_visitors,
+        created_at=event.created_at,
+        changed_at=event.changed_at,
+        status_changed_at=event.status_changed_at,
+        place=PlaceResponse.from_orm(event.place),
+    )
 
 
 @router.get("/events/{event_id}/seats", response_model=SeatsResponse)
@@ -100,8 +130,7 @@ def get_seats(event_id: str, db: SessionDep):
         raise HTTPException(status_code=500, detail="Place missing")
 
     base = place.seats_pattern
-
-    available = [[0 if seat == 1 else 0 for seat in row] for row in base]
+    available = [[0 for _ in row] for row in base]
 
     registrations = db.query(Registration).filter_by(event_id=event_id).all()
 
@@ -124,31 +153,50 @@ def create_ticket(req: TicketCreateRequest, db: SessionDep):
     if not place:
         raise HTTPException(status_code=500, detail="Place missing")
 
-    if req.row < 1 or req.row > len(place.seats_pattern):
+    if len(req.seat) < 2:
+        raise HTTPException(status_code=400, detail="Invalid seat format")
+
+    row_letter = req.seat[0].upper()
+    if not row_letter.isalpha():
+        raise HTTPException(status_code=400, detail="Invalid seat row")
+
+    try:
+        seat_number = int(req.seat[1:])
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid seat number")
+
+    row_index = ord(row_letter) - ord("A") + 1
+
+    if row_index < 1 or row_index > len(place.seats_pattern):
         raise HTTPException(status_code=400, detail="Invalid row")
 
-    if req.seat < 1 or req.seat > len(place.seats_pattern[req.row - 1]):
+    if seat_number < 1 or seat_number > len(place.seats_pattern[row_index - 1]):
         raise HTTPException(status_code=400, detail="Invalid seat")
 
-    existing = db.query(Registration).filter_by(event_id=req.event_id, row=req.row, seat=req.seat).first()
+    existing = db.query(Registration).filter_by(
+        event_id=req.event_id,
+        row=row_index,
+        seat=seat_number
+    ).first()
 
     if existing:
         raise HTTPException(status_code=409, detail="Seat already taken")
 
     ticket = Registration(
         event_id=req.event_id,
-        row=req.row,
-        seat=req.seat,
+        row=row_index,
+        seat=seat_number,
         email=req.email,
+        first_name=req.first_name,
+        last_name=req.last_name,
     )
+
     db.add(ticket)
-
     event.number_of_visitors += 1
-
     db.commit()
     db.refresh(ticket)
 
-    return {"ticket_id": ticket.ticket_id}
+    return TicketCreateResponse(ticket_id=ticket.ticket_id)
 
 
 @router.delete("/tickets/{ticket_id}", response_model=TicketDeleteResponse)
