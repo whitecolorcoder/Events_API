@@ -1,7 +1,10 @@
-from pydantic import BaseModel, ConfigDict
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
+
 from src.schemas.place import PlaceResponse
+
 
 class EventResponse(BaseModel):
     id: UUID
@@ -14,5 +17,5 @@ class EventResponse(BaseModel):
     changed_at: datetime
     status_changed_at: datetime
     place: PlaceResponse
-    
+
     model_config = ConfigDict(from_attributes=True)

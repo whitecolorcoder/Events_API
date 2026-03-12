@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException
-from sqlalchemy.orm import Session
-from src.routers.deps import SessionDep
-from src.database.models import Event, Place, Registration
-from src.services.sync_service import SyncService
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
 
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict
+
+from src.database.models import Event, Registration
+from src.routers.deps import SessionDep
+from src.services.sync_service import SyncService
 
 router = APIRouter(prefix="/api")
 
@@ -130,11 +130,7 @@ def create_ticket(req: TicketCreateRequest, db: SessionDep):
     if req.seat < 1 or req.seat > len(place.seats_pattern[req.row - 1]):
         raise HTTPException(status_code=400, detail="Invalid seat")
 
-    existing = db.query(Registration).filter_by(
-        event_id=req.event_id,
-        row=req.row,
-        seat=req.seat
-    ).first()
+    existing = db.query(Registration).filter_by(event_id=req.event_id, row=req.row, seat=req.seat).first()
 
     if existing:
         raise HTTPException(status_code=409, detail="Seat already taken")

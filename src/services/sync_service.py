@@ -1,8 +1,9 @@
 from datetime import datetime
+
 from sqlalchemy.orm import Session
 
+from src.database.models import Event, Place, SyncMetadata
 from src.services.events_provider_client import EventsProviderClient
-from src.database.models import Place, Event, SyncMetadata
 
 
 def parse_dt(value: str) -> datetime:
@@ -29,11 +30,7 @@ class SyncService:
         metadata = self.db.query(SyncMetadata).first()
 
         if metadata is None:
-            metadata = SyncMetadata(
-                id=1,
-                last_sync_time=datetime(2000, 1, 1),
-                last_changed_at=datetime(2000, 1, 1)
-            )
+            metadata = SyncMetadata(id=1, last_sync_time=datetime(2000, 1, 1), last_changed_at=datetime(2000, 1, 1))
             self.db.add(metadata)
             self.db.commit()
             self.db.refresh(metadata)
@@ -75,7 +72,7 @@ class SyncService:
                     address=place_data["address"],
                     seats_pattern=seats,
                     created_at=parse_dt(place_data["created_at"]),
-                    changed_at=parse_dt(place_data["changed_at"])
+                    changed_at=parse_dt(place_data["changed_at"]),
                 )
                 self.db.add(place)
                 existing_places[place_id] = place
@@ -105,7 +102,7 @@ class SyncService:
                     number_of_visitors=item["number_of_visitors"],
                     created_at=parse_dt(item["created_at"]),
                     changed_at=parse_dt(item["changed_at"]),
-                    status_changed_at=parse_dt(item["status_changed_at"])
+                    status_changed_at=parse_dt(item["status_changed_at"]),
                 )
                 self.db.add(event)
                 existing_events[event_id] = event

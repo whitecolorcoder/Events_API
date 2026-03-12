@@ -1,9 +1,11 @@
-from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, Integer
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.sql import func
 import uuid
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
+
 from src.database.base import Base
 
 
@@ -21,10 +23,7 @@ class Place(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    events: Mapped[list["Event"]] = relationship(
-        back_populates="place",
-        cascade="all, delete-orphan"
-    )
+    events: Mapped[list["Event"]] = relationship(back_populates="place", cascade="all, delete-orphan")
 
 
 class Event(Base):
@@ -34,11 +33,7 @@ class Event(Base):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    place_id: Mapped[str] = mapped_column(
-        ForeignKey("place.id"),
-        nullable=False,
-        index=True
-    )
+    place_id: Mapped[str] = mapped_column(ForeignKey("place.id"), nullable=False, index=True)
 
     event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     registration_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -52,41 +47,25 @@ class Event(Base):
 
     place: Mapped["Place"] = relationship(back_populates="events")
 
-    registrations: Mapped[list["Registration"]] = relationship(
-        back_populates="event",
-        cascade="all, delete-orphan"
-    )
-
+    registrations: Mapped[list["Registration"]] = relationship(back_populates="event", cascade="all, delete-orphan")
 
 
 class Registration(Base):
     __tablename__ = "registration"
 
-    ticket_id: Mapped[str] = mapped_column(
-        String,
-        primary_key=True,
-        default=lambda: str(uuid.uuid4()),
-        nullable=False
-    )
+    ticket_id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False)
 
-    event_id: Mapped[str] = mapped_column(
-        ForeignKey("event.id"),
-        nullable=False,
-        index=True
-    )
+    event_id: Mapped[str] = mapped_column(ForeignKey("event.id"), nullable=False, index=True)
 
     row: Mapped[int] = mapped_column(Integer, nullable=False)
     seat: Mapped[int] = mapped_column(Integer, nullable=False)
 
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     event: Mapped["Event"] = relationship(back_populates="registrations")
+
 
 class SyncMetadata(Base):
     __tablename__ = "sync_metadata"

@@ -1,5 +1,7 @@
+from typing import Any, Dict, List, Optional
+
 import requests
-from typing import Optional, Dict, Any, List
+
 from src.config.db_conf import settings
 
 
@@ -7,10 +9,7 @@ class EventsProviderClient:
     BASE_URL = "https://events-provider.dev-2.python-labs.ru/api"
 
     def __init__(self):
-        self.headers = {
-            "x-api-key": settings.EVENTS_API_KEY,
-            "Content-Type": "application/json"
-        }
+        self.headers = {"x-api-key": settings.EVENTS_API_KEY, "Content-Type": "application/json"}
 
     def get_events_page(self, changed_at: str, cursor: Optional[str] = None) -> Dict[str, Any]:
         url = f"{self.BASE_URL}/events/?changed_at={changed_at}"

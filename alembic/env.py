@@ -1,10 +1,11 @@
 from logging.config import fileConfig
-from alembic import context
+
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from src.config.db_conf import settings
 from src.database.base import Base
-from src.database.models import Place, Event, Registration, SyncMetadata
+
 config = context.config
 
 if config.config_file_name is not None:

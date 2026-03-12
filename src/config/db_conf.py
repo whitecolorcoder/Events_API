@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -10,18 +10,12 @@ class Settings(BaseSettings):
     DB_NAME: str = Field(alias="POSTGRES_DATABASE_NAME")
 
     EVENTS_API_KEY: str | None = None
-    
+
     @property
     def DATABASE_URL(self):
-        return (
-            f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}"
-            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-        )
+        return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        populate_by_name=True
-    )
+    model_config = SettingsConfigDict(env_file=".env", populate_by_name=True)
 
 
 settings = Settings()
