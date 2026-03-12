@@ -3,17 +3,14 @@ from sqlalchemy import String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
-
+import uuid
 from src.database.base import Base
 
 
 class Place(Base):
     __tablename__ = "place"
 
-    id: Mapped[str] = mapped_column(
-        String,
-        primary_key=True
-    )
+    id: Mapped[str] = mapped_column(String, primary_key=True)
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     city: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -21,14 +18,8 @@ class Place(Base):
 
     seats_pattern: Mapped[list[list[int]]] = mapped_column(JSONB, nullable=False)
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
-    changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     events: Mapped[list["Event"]] = relationship(
         back_populates="place",
@@ -39,10 +30,7 @@ class Place(Base):
 class Event(Base):
     __tablename__ = "event"
 
-    id: Mapped[str] = mapped_column(
-        String,
-        primary_key=True
-    )
+    id: Mapped[str] = mapped_column(String, primary_key=True)
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
@@ -52,34 +40,15 @@ class Event(Base):
         index=True
     )
 
-    event_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
-    registration_deadline: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
+    event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    registration_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     status: Mapped[str] = mapped_column(String(50), nullable=False)
-    number_of_visitors: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        server_default="0"
-    )
+    number_of_visitors: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
-    changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
-    status_changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     place: Mapped["Place"] = relationship(back_populates="events")
 
@@ -89,15 +58,15 @@ class Event(Base):
     )
 
 
+
 class Registration(Base):
     __tablename__ = "registration"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-
     ticket_id: Mapped[str] = mapped_column(
         String,
-        nullable=False,
-        index=True
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        nullable=False
     )
 
     event_id: Mapped[str] = mapped_column(
@@ -106,10 +75,10 @@ class Registration(Base):
         index=True
     )
 
-    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    row: Mapped[int] = mapped_column(Integer, nullable=False)
+    seat: Mapped[int] = mapped_column(Integer, nullable=False)
+
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    seat: Mapped[str] = mapped_column(String(20), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -119,17 +88,10 @@ class Registration(Base):
 
     event: Mapped["Event"] = relationship(back_populates="registrations")
 
-
 class SyncMetadata(Base):
     __tablename__ = "sync_metadata"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    last_sync_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
-    last_changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
+    last_sync_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
